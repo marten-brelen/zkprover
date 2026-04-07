@@ -29,18 +29,20 @@ Small Node 20 + TypeScript HTTP service for Medoxie exam-pass Groth16 proofs on 
 {
   "proof": "0x...",
   "publicInputs": ["...9 strings total..."],
-  "mode": "mock"
+  "mode": "http"
 }
 ```
 
 ### Modes
 
-- `ZK_PROVER_IMPLEMENTATION=mock`  
-  Returns `proof: "0x01"` and uses `buildExamPassPublicInputs`.
+Default when `ZK_PROVER_IMPLEMENTATION` is unset is **snarkjs** (real proofs).
+
 - `ZK_PROVER_IMPLEMENTATION=snarkjs`  
   Runs `snarkjs.groth16.fullProve` and requires:
   - `ZK_WASM_PATH`
   - `ZK_ZKEY_PATH`
+- `ZK_PROVER_IMPLEMENTATION=mock`  
+  Returns `proof: "0x01"` and uses `buildExamPassPublicInputs`.
 
 ### Optional Auth
 

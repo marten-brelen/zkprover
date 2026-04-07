@@ -103,7 +103,7 @@ async function handleExamPass(input: ProverRequest): Promise<{
   publicInputs: bigint[]
   mode: 'http' | 'mock'
 }> {
-  const mode = String(process.env.ZK_PROVER_IMPLEMENTATION || 'mock').trim().toLowerCase()
+  const mode = String(process.env.ZK_PROVER_IMPLEMENTATION || 'snarkjs').trim().toLowerCase()
   if (mode === 'snarkjs') {
     const out = await runSnarkjsProver(input)
     return { ...out, mode: 'http' }
@@ -132,7 +132,7 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, {
         ok: true,
         service: 'medoxie-exam-zk-prover',
-        implementation: process.env.ZK_PROVER_IMPLEMENTATION || 'mock',
+        implementation: process.env.ZK_PROVER_IMPLEMENTATION || 'snarkjs',
         hasWasm: Boolean(process.env.ZK_WASM_PATH),
         hasZkey: Boolean(process.env.ZK_ZKEY_PATH),
       })
