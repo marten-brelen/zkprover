@@ -3,6 +3,4 @@ node_modules/
 .env.local
 *.log
 .DS_Store
-circuits/*.wasm
-circuits/*.zkey
 circuits/*.ptau

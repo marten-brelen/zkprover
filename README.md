@@ -2,6 +2,25 @@
 
 Small Node 20 + TypeScript HTTP service for Medoxie exam-pass Groth16 proofs on Railway/Docker.
 
+### Ship proving artifacts (Git LFS)
+
+Proving keys live in **`circuits/`** as **`exam_pass.wasm`** and **`exam_pass_final.zkey`** (names must match exactly). They are tracked with **Git LFS** so Railway deploys from GitHub include real files, not empty `circuits/` from `.gitignore` alone.
+
+1. [Install Git LFS](https://git-lfs.com/) and run **`git lfs install`** once on your machine.
+2. Build or copy **`circuits/exam_pass.wasm`** and **`circuits/exam_pass_final.zkey`**.
+3. From the repo root:
+
+   ```bash
+   git add circuits/exam_pass.wasm circuits/exam_pass_final.zkey .gitattributes
+   git commit -m "Add exam pass Groth16 artifacts (Git LFS)"
+   git push
+   ```
+
+4. **Clones** after push: if binaries show as tiny pointer files, run **`git lfs pull`** (or clone with LFS enabled) to fetch full objects.
+5. **CI / Railway:** Confirm the deploy environment checks out **Git LFS** blobs (not just pointer files). If `/healthz` shows `snarkjsArtifactsReady: false` and files look tiny locally, run **`git lfs pull`** or enable LFS in the host’s Git settings.
+
+**Railway:** You do **not** need **`ZK_WASM_PATH`** / **`ZK_ZKEY_PATH`** unless you want to override defaults. The server resolves defaults relative to `src/server.ts`: `../circuits/exam_pass.wasm` and `../circuits/exam_pass_final.zkey` (works with `tsx` and typical Docker layouts).
+
 ### Endpoints
 
 - `GET /healthz` and `GET /` for health.
@@ -9,7 +28,7 @@ Small Node 20 + TypeScript HTTP service for Medoxie exam-pass Groth16 proofs on 
 
 #### `GET /healthz` response (snarkjs)
 
-When `ZK_PROVER_IMPLEMENTATION` is `snarkjs` (or unset; default is snarkjs), the server checks that `ZK_WASM_PATH` and `ZK_ZKEY_PATH` point to **readable files**:
+When `ZK_PROVER_IMPLEMENTATION` is `snarkjs` (or unset; default is snarkjs), the server checks that `ZK_WASM_PATH` and `ZK_ZKEY_PATH` point to **readable files** (including repo defaults when env is unset):
 
 - `wasmExists` — `true` if the wasm path exists and is readable.
 - `zkeyExists` — `true` if the zkey path exists and is readable.
@@ -48,9 +67,7 @@ In **mock** mode, `wasmExists` and `zkeyExists` stay `false` (no filesystem prob
 Default when `ZK_PROVER_IMPLEMENTATION` is unset is **snarkjs** (real proofs).
 
 - `ZK_PROVER_IMPLEMENTATION=snarkjs`  
-  Runs `snarkjs.groth16.fullProve` and requires:
-  - `ZK_WASM_PATH`
-  - `ZK_ZKEY_PATH`
+  Runs `snarkjs.groth16.fullProve` using **`ZK_WASM_PATH`** and **`ZK_ZKEY_PATH`** (defaults: **`circuits/exam_pass.wasm`** and **`circuits/exam_pass_final.zkey`** next to published `src/`).
 - `ZK_PROVER_IMPLEMENTATION=mock`  
   Returns `proof: "0x01"` and uses `buildExamPassPublicInputs`.
 
@@ -60,36 +77,10 @@ If `ZK_PROVER_AUTH_TOKEN` is set, calls to `POST /exam-pass` must include:
 
 `Authorization: Bearer <token>`
 
-### Railway deploy checklist
-
-**A plain git deploy is not enough:** `.wasm` / `.zkey` are gitignored, so the Docker build only copies whatever is under `circuits/` at build time (often just `README.md`). You must deliver `exam_pass.wasm` and `exam_pass_final.zkey` by **one** of the following.
-
-#### Primary: persistent volume (good for large binaries)
-
-1. In Railway, add a **volume** mounted at e.g. `/data/circuits`.
-2. One-time: upload `exam_pass.wasm` and `exam_pass_final.zkey` onto that volume (Railway shell, `scp`/`rsync`, or a small init job).
-3. Set environment variables:
-
-   - `ZK_WASM_PATH=/data/circuits/exam_pass.wasm`
-   - `ZK_ZKEY_PATH=/data/circuits/exam_pass_final.zkey`
-
-4. Keep `ZK_PROVER_IMPLEMENTATION` unset or `snarkjs`.
-5. Redeploy or restart so the service sees the files.
-
-#### Alternative: bake artifacts into the image (CI-friendly)
-
-1. Run your Circom/snarkjs pipeline in CI (or locally) and produce `exam_pass.wasm` and `exam_pass_final.zkey`.
-2. Before `docker build`, place those files under `circuits/` in the build context (or download them from GitHub Actions artifacts, S3, etc. in a CI step — do not commit large binaries to git unless you use Git LFS).
-3. The Dockerfile `COPY circuits ./circuits` will include them at `/app/circuits/` in the image.
-4. Set:
-
-   - `ZK_WASM_PATH=/app/circuits/exam_pass.wasm`
-   - `ZK_ZKEY_PATH=/app/circuits/exam_pass_final.zkey`
-
-### Railway / Docker env notes
+### Railway / env notes
 
 - Service binds to `0.0.0.0` and `process.env.PORT` (Railway-compatible).
-- Paths in `ZK_WASM_PATH` / `ZK_ZKEY_PATH` must match where files actually live at runtime (volume vs image).
+- In **production** with **snarkjs**, if either artifact path is missing or unreadable at startup, the process **exits with code 1** so deploys fail fast instead of returning 500 on every `/exam-pass`.
 
 ### Verify after deploy
 

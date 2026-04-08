@@ -1,8 +1,21 @@
 import http from 'node:http'
-import { promises as fs } from 'node:fs'
+import { accessSync, constants as fsConstants, promises as fs } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import * as snarkjs from 'snarkjs'
 import { toHex } from 'viem'
 import { buildExamPassPublicInputs } from './publicSignals.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const defaultWasmPath = path.join(__dirname, '..', 'circuits', 'exam_pass.wasm')
+const defaultZkeyPath = path.join(__dirname, '..', 'circuits', 'exam_pass_final.zkey')
+
+if (!process.env.ZK_WASM_PATH) {
+  process.env.ZK_WASM_PATH = defaultWasmPath
+}
+if (!process.env.ZK_ZKEY_PATH) {
+  process.env.ZK_ZKEY_PATH = defaultZkeyPath
+}
 
 type ProverRequest = {
   attemptId: `0x${string}`
@@ -234,6 +247,27 @@ const server = http.createServer(async (req, res) => {
     return json(res, 500, { error: message })
   }
 })
+
+function assertProductionSnarkjsArtifacts(): void {
+  const impl = String(process.env.ZK_PROVER_IMPLEMENTATION || 'snarkjs').trim().toLowerCase()
+  if (impl !== 'snarkjs' || process.env.NODE_ENV !== 'production') return
+  const wasmPath = process.env.ZK_WASM_PATH
+  const zkeyPath = process.env.ZK_ZKEY_PATH
+  try {
+    if (wasmPath) accessSync(wasmPath, fsConstants.R_OK)
+    if (zkeyPath) accessSync(zkeyPath, fsConstants.R_OK)
+    if (!wasmPath || !zkeyPath) throw new Error('missing path')
+  } catch {
+    console.error(
+      '[startup] Production snarkjs requires readable artifacts at:\n' +
+        `  ZK_WASM_PATH=${wasmPath ?? '(unset)'}\n` +
+        `  ZK_ZKEY_PATH=${zkeyPath ?? '(unset)'}`
+    )
+    process.exit(1)
+  }
+}
+
+assertProductionSnarkjsArtifacts()
 
 const port = Number(process.env.PORT || process.env.ZK_PROVER_PORT || 8787)
 server.listen(port, '0.0.0.0', () => {

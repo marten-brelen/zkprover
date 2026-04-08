@@ -1,31 +1,10 @@
 # circuits
 
-Place your proving artifacts here (or mount them via a Railway volume). See the root **README.md** section **Railway deploy checklist** for volume vs image bake.
-
-Expected files for `snarkjs` mode:
+Expected **`snarkjs`** artifacts (exact names):
 
 - `exam_pass.wasm`
 - `exam_pass_final.zkey`
 
-This repository ignores large artifacts (`*.wasm`, `*.zkey`, `*.ptau`) in git, so this README is kept as a placeholder.
+They are tracked with **Git LFS** (see root `.gitattributes` and **README.md** → **Ship proving artifacts**). Large ceremony files (`*.ptau`) stay gitignored.
 
-## Docker image path
-
-The `Dockerfile` copies this folder into the container:
-
-- host repo: `circuits/`
-- in container: `/app/circuits/`
-
-Example env:
-
-- `ZK_WASM_PATH=/app/circuits/exam_pass.wasm`
-- `ZK_ZKEY_PATH=/app/circuits/exam_pass_final.zkey`
-
-## Railway volume path
-
-If you mount a Railway volume instead of baking artifacts into the image, set env vars to the mounted path, for example:
-
-- `ZK_WASM_PATH=/data/circuits/exam_pass.wasm`
-- `ZK_ZKEY_PATH=/data/circuits/exam_pass_final.zkey`
-
-Use the same env names either way; only the paths change.
+The HTTP service defaults **`ZK_WASM_PATH`** / **`ZK_ZKEY_PATH`** to these paths next to `src/` at runtime, so you usually do not set env vars on Railway.

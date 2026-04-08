@@ -1,0 +1,2 @@
+circuits/exam_pass.wasm filter=lfs diff=lfs merge=lfs -text
+circuits/exam_pass_final.zkey filter=lfs diff=lfs merge=lfs -text
