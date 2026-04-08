@@ -83,7 +83,7 @@ If `ZK_PROVER_AUTH_TOKEN` is set, calls to `POST /exam-pass` must include:
 - In **production** with **snarkjs**, if either artifact path is missing or unreadable at startup, the process **exits with code 1** so deploys fail fast instead of returning 500 on every `/exam-pass`.
 - `git lfs pull` should run at **source checkout time** (Railway VCS settings / CI clone step), not inside the Nixpacks build container, because the container build context does not include a `.git` directory.
 - This repo also includes `railway.toml` with build/start defaults:
-  - Build: `npm ci && npm run typecheck`
+  - Build: `npm install && npm run typecheck`
   - Start: `npm run start`
 
 ### Verify after deploy
