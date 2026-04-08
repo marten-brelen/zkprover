@@ -52,6 +52,16 @@ function parseBody(req: http.IncomingMessage): Promise<unknown> {
 
 const EXPECTED_PUBLIC_INPUTS = 9
 
+async function fileReadable(path: string | undefined): Promise<boolean> {
+  if (!path) return false
+  try {
+    await fs.access(path, fs.constants.R_OK)
+    return true
+  } catch {
+    return false
+  }
+}
+
 async function runSnarkjsProver(input: ProverRequest): Promise<{
   proof: `0x${string}`
   publicInputs: bigint[]
@@ -129,12 +139,27 @@ const authToken = String(process.env.ZK_PROVER_AUTH_TOKEN || '')
 const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'GET' && (req.url === '/healthz' || req.url === '/')) {
+      const implementation = process.env.ZK_PROVER_IMPLEMENTATION || 'snarkjs'
+      const impl = String(implementation).trim().toLowerCase()
+      const wasmPath = process.env.ZK_WASM_PATH
+      const zkeyPath = process.env.ZK_ZKEY_PATH
+
+      let wasmExists = false
+      let zkeyExists = false
+      if (impl === 'snarkjs') {
+        wasmExists = await fileReadable(wasmPath)
+        zkeyExists = await fileReadable(zkeyPath)
+      }
+
+      const snarkjsArtifactsReady = impl === 'snarkjs' && wasmExists && zkeyExists
+
       return json(res, 200, {
         ok: true,
         service: 'medoxie-exam-zk-prover',
-        implementation: process.env.ZK_PROVER_IMPLEMENTATION || 'snarkjs',
-        hasWasm: Boolean(process.env.ZK_WASM_PATH),
-        hasZkey: Boolean(process.env.ZK_ZKEY_PATH),
+        implementation,
+        wasmExists,
+        zkeyExists,
+        snarkjsArtifactsReady,
       })
     }
 

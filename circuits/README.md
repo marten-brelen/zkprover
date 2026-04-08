@@ -1,6 +1,6 @@
 # circuits
 
-Place your proving artifacts here (or mount them via a Railway volume).
+Place your proving artifacts here (or mount them via a Railway volume). See the root **README.md** section **Railway deploy checklist** for volume vs image bake.
 
 Expected files for `snarkjs` mode:
 
