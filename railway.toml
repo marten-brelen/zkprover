@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "git lfs install && git lfs pull && npm ci && npm run typecheck"
+buildCommand = "npm ci && npm run typecheck"
 
 [deploy]
 startCommand = "npm run start"
