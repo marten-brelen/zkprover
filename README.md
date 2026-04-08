@@ -2,22 +2,16 @@
 
 Small Node 20 + TypeScript HTTP service for Medoxie exam-pass Groth16 proofs on Railway/Docker.
 
-### Ship proving artifacts (Git LFS)
+### Ship proving artifacts (Railway volume)
 
-Proving keys live in **`circuits/`** as **`exam_pass.wasm`** and **`exam_pass_final.zkey`** (names must match exactly). They are tracked with **Git LFS** so Railway deploys from GitHub include real files, not empty `circuits/` from `.gitignore` alone.
+Proving keys live at **`/app/circuits/exam_pass.wasm`** and **`/app/circuits/exam_pass_final.zkey`** (names must match exactly). They are stored in the Railway persistent volume **`zkprover-circuits`**, mounted at `/app/circuits` — they are **not tracked in git**.
 
-1. [Install Git LFS](https://git-lfs.com/) and run **`git lfs install`** once on your machine.
-2. Build or copy **`circuits/exam_pass.wasm`** and **`circuits/exam_pass_final.zkey`**.
-3. From the repo root:
+To populate the volume for the first time (or to update artifacts):
 
-   ```bash
-   git add circuits/exam_pass.wasm circuits/exam_pass_final.zkey .gitattributes
-   git commit -m "Add exam pass Groth16 artifacts (Git LFS)"
-   git push
-   ```
+1. Build or obtain **`exam_pass.wasm`** and **`exam_pass_final.zkey`**.
+2. Upload them directly to the Railway volume at `/app/circuits/` using the Railway CLI or the Railway dashboard volume file browser.
 
-4. **Clones** after push: if binaries show as tiny pointer files, run **`git lfs pull`** (or clone with LFS enabled) to fetch full objects.
-5. **CI / Railway:** Confirm the deploy environment checks out **Git LFS** blobs (not just pointer files). If `/healthz` shows `snarkjsArtifactsReady: false` and files look tiny locally, run **`git lfs pull`** or enable LFS in the host’s Git settings.
+The `circuits/` directory is gitignored. Do not commit binary artifacts to the repository.
 
 **Railway:** You do **not** need **`ZK_WASM_PATH`** / **`ZK_ZKEY_PATH`** unless you want to override defaults. The server resolves defaults relative to `src/server.ts`: `../circuits/exam_pass.wasm` and `../circuits/exam_pass_final.zkey` (works with `tsx` and typical Docker layouts).
 
@@ -81,12 +75,11 @@ If `ZK_PROVER_AUTH_TOKEN` is set, calls to `POST /exam-pass` must include:
 
 - Service binds to `0.0.0.0` and `process.env.PORT` (Railway-compatible).
 - In **production** with **snarkjs**, if either artifact path is missing or unreadable at startup, the process **exits with code 1** so deploys fail fast instead of returning 500 on every `/exam-pass`.
-- `git lfs pull` should run at **source checkout time** (Railway VCS settings / CI clone step), not inside the Nixpacks build container, because the container build context does not include a `.git` directory.
+- Binary artifacts (`circuits/`) are **not** in the repository. They are served from the Railway persistent volume `zkprover-circuits` mounted at `/app/circuits`.
 - This repo includes `nixpacks.toml` for build phases:
-  - Install: `npm install`
+  - Install: `npm ci`
   - Build: `npm run typecheck`
   - Start: `npm run start`
-- If Railway UI has a custom Build Command set (for example `npm ci && npm run typecheck`), it may override repo config. Clear the UI override to use repo-managed Nixpacks phases.
 
 ### Verify after deploy
 
