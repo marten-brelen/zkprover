@@ -81,6 +81,10 @@ If `ZK_PROVER_AUTH_TOKEN` is set, calls to `POST /exam-pass` must include:
 
 - Service binds to `0.0.0.0` and `process.env.PORT` (Railway-compatible).
 - In **production** with **snarkjs**, if either artifact path is missing or unreadable at startup, the process **exits with code 1** so deploys fail fast instead of returning 500 on every `/exam-pass`.
+- This repo includes `nixpacks.toml` so Railpack/Nixpacks installs `git-lfs` before running `git lfs pull`.
+- This repo also includes `railway.toml` with build/start defaults:
+  - Build: `git lfs install && git lfs pull && npm ci && npm run typecheck`
+  - Start: `npm run start`
 
 ### Verify after deploy
 
