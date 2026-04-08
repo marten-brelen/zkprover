@@ -77,7 +77,7 @@ If `ZK_PROVER_AUTH_TOKEN` is set, calls to `POST /exam-pass` must include:
 - In **production** with **snarkjs**, if either artifact path is missing or unreadable at startup, the process **exits with code 1** so deploys fail fast instead of returning 500 on every `/exam-pass`.
 - Binary artifacts (`circuits/`) are **not** in the repository. They are served from the Railway persistent volume `zkprover-circuits` mounted at `/app/circuits`.
 - This repo includes `nixpacks.toml` for build phases:
-  - Install: `npm ci`
+  - Install: `npm install` (avoids `npm ci` cache-mount `EBUSY` issue in Railpack Docker builds)
   - Build: `npm run typecheck`
   - Start: `npm run start`
 
