@@ -2,18 +2,15 @@
 
 Small Node 20 + TypeScript HTTP service for Medoxie exam-pass Groth16 proofs on Railway/Docker.
 
-### Ship proving artifacts (Railway volume)
+### Ship proving artifacts (Git LFS)
 
-Proving keys live at **`/app/circuits/exam_pass.wasm`** and **`/app/circuits/exam_pass_final.zkey`** (names must match exactly). They are stored in the Railway persistent volume **`zkprover-circuits`**, mounted at `/app/circuits` — they are **not tracked in git**.
+Proving keys are **`circuits/exam_pass.wasm`** and **`circuits/exam_pass_final.zkey`** (exact names). They are tracked with **Git LFS** (see `.gitattributes`).
 
-To populate the volume for the first time (or to update artifacts):
+1. Install [Git LFS](https://git-lfs.com/) and run `git lfs install` locally.
+2. After clone, run `git lfs pull` if files show as pointers.
+3. **Railway:** Ensure builds fetch LFS objects so `/app/circuits/` contains real binaries, or mount a volume at `/app/circuits` and upload artifacts there instead.
 
-1. Build or obtain **`exam_pass.wasm`** and **`exam_pass_final.zkey`**.
-2. Upload them directly to the Railway volume at `/app/circuits/` using the Railway CLI or the Railway dashboard volume file browser.
-
-The `circuits/` directory is gitignored. Do not commit binary artifacts to the repository.
-
-**Railway:** You do **not** need **`ZK_WASM_PATH`** / **`ZK_ZKEY_PATH`** unless you want to override defaults. The server resolves defaults relative to `src/server.ts`: `../circuits/exam_pass.wasm` and `../circuits/exam_pass_final.zkey` (works with `tsx` and typical Docker layouts).
+**Railway:** You do **not** need **`ZK_WASM_PATH`** / **`ZK_ZKEY_PATH`** unless overriding defaults. The server resolves paths relative to `src/server.ts`: `../circuits/exam_pass.wasm` and `../circuits/exam_pass_final.zkey`.
 
 ### Endpoints
 
@@ -75,7 +72,7 @@ If `ZK_PROVER_AUTH_TOKEN` is set, calls to `POST /exam-pass` must include:
 
 - Service binds to `0.0.0.0` and `process.env.PORT` (Railway-compatible).
 - In **production** with **snarkjs**, if either artifact path is missing or unreadable at startup, the process **exits with code 1** so deploys fail fast instead of returning 500 on every `/exam-pass`.
-- Binary artifacts (`circuits/`) are **not** in the repository. They are served from the Railway persistent volume `zkprover-circuits` mounted at `/app/circuits`.
+- Ceremony files (`circuits/*.ptau`) stay gitignored.
 - This repo includes `nixpacks.toml` for build phases:
   - Install: `npm install` (avoids `npm ci` cache-mount `EBUSY` issue in Railpack Docker builds)
   - Build: `npm run typecheck`
